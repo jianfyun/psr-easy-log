@@ -2,6 +2,7 @@
     "name": "psr-easy/log",
     "description": "Simple log implementation of PSR-3",
     "keywords": ["PSR-3", "Log", "File"],
+    "version": "0.1.0",
     "type": "library",
     "require": {
         "php": ">=5.5",
