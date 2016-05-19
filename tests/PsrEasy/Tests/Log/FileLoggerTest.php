@@ -79,4 +79,12 @@ class FileLoggerTest extends \PHPUnit_Framework_TestCase
         $context = ['variable' => 'some variable value'];
         $this->logger->log('other', "$message. Var is {variable}", $context);
     }
+
+    public function testWithLevels()
+    {
+        $message = 'Message that should not be logged';
+        $context = ['variable' => 'some variable value'];
+        $this->logger->withLevels(['error']);
+        $this->logger->debug("$message. Var is {variable}", $context);
+    }
 }

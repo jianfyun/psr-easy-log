@@ -6,9 +6,9 @@ use Psr\Log\AbstractLogger;
 /**
  * File logger instance.
  *
- * @uses Psr\Log\AbstractLogger
+ * @uses    Psr\Log\AbstractLogger
  * @package PsrEasy\Log
- * @see http://www.php-fig.org/psr/psr-3/
+ * @see     http://www.php-fig.org/psr/psr-3/
  */
 class FileLogger extends AbstractLogger
 {
@@ -55,6 +55,15 @@ class FileLogger extends AbstractLogger
     private $srcDir = '/src/';
 
     /**
+     *
+     * Available log levels.
+     *
+     * @var array
+     * @access private
+     */
+    private $levels = [];
+
+    /**
      * __construct
      *
      * @param  string $logDir Log directory path.
@@ -95,7 +104,7 @@ class FileLogger extends AbstractLogger
     /**
      * Return an instance with the limit of stack frames returned by debug_backtrace.
      *
-     * @param  int  $limit Limit number for debug_backtrace.
+     * @param  int $limit Limit number for debug_backtrace.
      * @access public
      * @return self
      */
@@ -122,6 +131,19 @@ class FileLogger extends AbstractLogger
     }
 
     /**
+     * Return an instance with the available log levels.
+     *
+     * @param  array $levels Available log levels. All levels are available by default.
+     * @access public
+     * @return self
+     */
+    public function withLevels(array $levels)
+    {
+        $this->levels = $levels;
+        return $this;
+    }
+
+    /**
      * Interpolates context values into the message placeholders.
      *
      * @param  sting  $level   Log level
@@ -132,6 +154,10 @@ class FileLogger extends AbstractLogger
      */
     public function log($level, $message, array $context = [])
     {
+        if (!empty($this->levels) && !in_array($level, $this->levels)) {
+            return;
+        }
+        
         $now     = time();
         $date    = date('Ymd', $now);
         $message = $this->interpolate($level, $message, $context, $now);
@@ -157,26 +183,29 @@ class FileLogger extends AbstractLogger
         $uniqid    = empty($this->uniqid) ? uniqid(getmypid()) : $this->uniqid;
         $replace   = [];
         $array     = [];
-        $exception = null;
+        $exception = [];
 
         foreach ($context as $key => $val) {
             if (is_array($val)) {
                 $array[$key] = $val;
             } elseif ('exception' == $key && $val instanceof \Exception) {
                 do {
-                    $exception .= $val->getTraceAsString();
+                    $exception[] = $val->getTrace();
                 } while ($val = $val->getPrevious());
             } else {
                 $replace['{' . $key . '}'] = $val;
             }
         }
 
+        if (!empty($exception)) {
+            $array['exception'] = $exception;
+        }
+
         list($file, $line) = $this->getFileLine();
         $message = strtr($message, $replace);
         $message = str_replace("\n", '', $message);
         $arrStr  = $this->getArrayString($level, $array);
-        $message = sprintf($this->format, $time, $address, $uniqid, $file, $line, $message, $arrStr);
-        return empty($exception) ? $message : "{$message}{$exception}\n";
+        return sprintf($this->format, $time, $address, $uniqid, $file, $line, $message, $arrStr);
     }
 
     private function getIpAddress()
@@ -210,10 +239,8 @@ class FileLogger extends AbstractLogger
     {
         if (empty($array)) {
             $string = '';
-        } elseif ('debug' != $level) {
-            $string = json_encode($array, JSON_UNESCAPED_UNICODE);
         } else {
-            $string = var_export($array, true);
+            $string = json_encode($array, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         }
 
         return $string;
