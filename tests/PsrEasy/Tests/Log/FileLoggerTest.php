@@ -73,8 +73,9 @@ class FileLoggerTest extends \PHPUnit_Framework_TestCase
         $this->logger->debug("$message. Var is {variable}", $context);
     }
 
-    public function testLog()
+    public function testOtherLog()
     {
+        $this->setExpectedException('InvalidArgumentException');
         $message = 'Logs with an arbitrary level';
         $context = ['variable' => 'some variable value'];
         $this->logger->log('other', "$message. Var is {variable}", $context);

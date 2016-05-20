@@ -2,6 +2,7 @@
 namespace PsrEasy\Log;
 
 use Psr\Log\AbstractLogger;
+use Psr\Log\LogLevel;
 
 /**
  * File logger instance.
@@ -64,6 +65,14 @@ class FileLogger extends AbstractLogger
     private $levels = [];
 
     /**
+     * All pre-defined log levels.
+     *
+     * @var array
+     * @access private
+     */
+    private $allLevels = [];
+
+    /**
      * __construct
      *
      * @param  string $logDir Log directory path.
@@ -72,7 +81,17 @@ class FileLogger extends AbstractLogger
      */
     public function __construct($logDir)
     {
-        $this->logDir = $logDir;
+        $this->logDir    = $logDir;
+        $this->allLevels = [
+            LogLevel::EMERGENCY,
+            LogLevel::ALERT,
+            LogLevel::CRITICAL,
+            LogLevel::ERROR,
+            LogLevel::WARNING,
+            LogLevel::NOTICE,
+            LogLevel::INFO,
+            LogLevel::DEBUG,
+        ];
     }
 
     /**
@@ -154,10 +173,14 @@ class FileLogger extends AbstractLogger
      */
     public function log($level, $message, array $context = [])
     {
+        if (!in_array($level, $this->allLevels)) {
+            throw new \InvalidArgumentException("Log level $level not defined");
+        }
+
         if (!empty($this->levels) && !in_array($level, $this->levels)) {
             return;
         }
-        
+
         $now     = time();
         $date    = date('Ymd', $now);
         $message = $this->interpolate($level, $message, $context, $now);
